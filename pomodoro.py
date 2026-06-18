@@ -8,15 +8,23 @@ import tkinter as tk
 from tkinter import font
 
 # ── 常量 ────────────────────────────────────────────
-WORK = 25 * 60    # 专注时长（秒）
-BREAK = 5 * 60    # 休息时长（秒）
+WORK = 25 * 60     # 专注时长（秒）
+BREAK = 5 * 60     # 休息时长（秒）
+INTERVAL = 1000    # 计时器间隔（毫秒）
+
+# ── 颜色 ────────────────────────────────────────────
+BG = '#f5ecec'     # 暖白背景
+FG = '#3d2d2d'     # 深棕文字
+RED = '#c04040'     # 番茄红（专注）
+GREEN = '#5a8a6a'   # 鼠尾草绿（休息）
+MUTED = '#a09090'   # 辅助文字
+WHITE = '#ffffff'   # 按钮按下前景
 
 # ── 全局状态 ────────────────────────────────────────
 remaining = WORK   # 当前阶段剩余秒数
 is_work = True     # True=专注阶段, False=休息阶段
-running = False    # 计时器是否在跑
 count = 0          # 已完成番茄数
-job = None         # tk after 的 job id，用于取消定时
+job = None         # tk after 的 job id；None 表示未在计时
 
 
 def fmt(s):
@@ -28,12 +36,13 @@ def tick():
     """每秒回调：倒计时 -1，到 0 时自动切换模式"""
     global remaining, job
     remaining -= 1
-    timer_label.config(text=fmt(remaining))
-    root.title(f"{fmt(remaining)} — {'专注' if is_work else '休息'}")
+    text = fmt(remaining)
+    timer_label.config(text=text)
+    root.title(f"{text} — {'专注' if is_work else '休息'}")
     if remaining <= 0:
         switch_mode()
     else:
-        job = root.after(1000, tick)  # 1 秒后再调一次
+        job = root.after(INTERVAL, tick)
 
 
 def switch_mode():
@@ -56,15 +65,13 @@ def switch_mode():
 
 def toggle():
     """开始/暂停 按钮回调"""
-    global running, job
-    if running:
+    global job
+    if job is not None:
         root.after_cancel(job)
         job = None
-        running = False
         btn.config(text='继续')
     else:
-        job = root.after(1000, tick)
-        running = True
+        job = root.after(INTERVAL, tick)
         btn.config(text='暂停')
 
 
@@ -72,15 +79,8 @@ def toggle():
 root = tk.Tk()
 root.title('番茄钟')
 root.geometry('400x360')
-root.configure(bg='#f5ecec')
+root.configure(bg=BG)
 root.resizable(False, False)
-
-# ── 颜色 ────────────────────────────────────────────
-BG = '#f5ecec'      # 暖白背景
-FG = '#3d2d2d'      # 深棕文字
-RED = '#c04040'      # 番茄红（专注）
-GREEN = '#5a8a6a'    # 鼠尾草绿（休息）
-MUTED = '#a09090'    # 辅助文字
 
 # ── 模式标签（专注/休息） ──────────────────────────
 label = tk.Label(root, text='专注', font=('', 16), bg=BG, fg=RED)
@@ -94,7 +94,7 @@ timer_label.pack(pady=5)
 
 # ── 开始/暂停 按钮 ──────────────────────────────────
 btn = tk.Button(root, text='开始', font=('', 14), fg=RED, bg=BG,
-                activebackground=RED, activeforeground='#fff',
+                activebackground=RED, activeforeground=WHITE,
                 borderwidth=2, relief='solid', padx=30, pady=6,
                 cursor='hand2', command=toggle)
 btn.pack(pady=10)
